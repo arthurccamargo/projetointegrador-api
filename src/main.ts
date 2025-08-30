@@ -1,5 +1,6 @@
 /* 
-main.ts ponto de partida do backend, responsável por iniciar o servidor e aplicar regras globais (como validação de DTOs) 
+main.ts
+Ponto de entrada da aplicação. Sobe o servidor, aplica pipes globais e configurações que valem para toda a app como validação de DTOs
 */
 import { NestFactory } from '@nestjs/core'; // classe para criar a aplicação
 import { AppModule } from './app.module'; // agrega todos os outros módulos UserModule..

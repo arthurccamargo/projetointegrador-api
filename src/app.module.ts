@@ -1,3 +1,7 @@
+/* 
+app.module
+Módulo raiz do NestJS. Define quais módulos, controllers e providers serão carregados na aplicação. Não sobe o servidor.
+*/
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from '../prisma/prisma.module';
