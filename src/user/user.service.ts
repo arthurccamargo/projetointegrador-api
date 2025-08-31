@@ -1,35 +1,68 @@
-import { Injectable } from '@nestjs/common'; // indica que o NestJS pode injetar essa classe em outros módulos
-import { PrismaService } from '../../prisma/prisma.service'; // cliente Prisma para acessar o banco de dados
-import { CreateUserDto } from './dto/create-user.dto'; // DTO que define os campos que um usuário precisa para ser criado
-import bcrypt from 'bcrypt'; // para criptografar senhas
- 
+import { Injectable, BadRequestException } from "@nestjs/common";
+import * as bcrypt from "bcrypt";
+import { PrismaService } from "../../prisma/prisma.service";
+import { CreateUserDto, CreateVolunteerDto, CreateOngDto } from './dto/create-user.dto';
+
 @Injectable()
 export class UserService {
-  // injeta o PrismaService automaticamente para acessar o banco de dados
   constructor(private prisma: PrismaService) {}
 
-  async create(data: CreateUserDto) {
-    const hashedPassword = await bcrypt.hash(data.password, 10);
+  async createUser(data: CreateUserDto & (CreateVolunteerDto | CreateOngDto)) {
+    const { email, password, role } = data;
 
-    // Criar usuário
+    // Valida role
+    if (!["VOLUNTEER", "ONG"].includes(role)) {
+      throw new BadRequestException("Invalid role");
+    }
+
+    // Verifica se email já existe
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email }
+    });
+
+    if (existingUser) {
+      throw new BadRequestException("Email already exists");
+    }
+
+    // Hash da senha
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Cria o usuário com o perfil apropriado ONG ou Voluntário
     const user = await this.prisma.user.create({
       data: {
-        email: data.email,
+        email,
         password: hashedPassword,
-        role: data.role,
-        volunteerProfile: data.role === 'VOLUNTEER'
-          ? {
-              create: {
-                fullName: data.fullName,
-                cpf: data.cpf,
-                birthDate: data.birthDate,
-                phone: data.phone,
-                city: data.city,
-                state: data.state,
-                experiences: data.experiences,
-              },
-            }
-          : undefined,
+        role,
+        status: "PENDING",
+        volunteerProfile:
+          role === "VOLUNTEER"
+            ? {
+                create: {
+                  fullName: (data as CreateVolunteerDto).fullName,
+                  cpf: (data as CreateVolunteerDto).cpf,
+                  birthDate: (data as CreateVolunteerDto).birthDate,
+                  phone: (data as CreateVolunteerDto).phone,
+                  city: (data as CreateVolunteerDto).city,
+                  state: (data as CreateVolunteerDto).state,
+                  experiences: (data as CreateVolunteerDto).experiences,
+                },
+              }
+            : undefined,
+        ongProfile:
+          role === "ONG"
+            ? {
+                create: {
+                  name: (data as CreateOngDto).name,
+                  cnpj: (data as CreateOngDto).cnpj,
+                  description: (data as CreateOngDto).description,
+                  address: (data as CreateOngDto).address,
+                  responsibleName: (data as CreateOngDto).responsibleName,
+                  responsibleCpf: (data as CreateOngDto).responsibleCpf,
+                  responsibleEmail: (data as CreateOngDto).responsibleEmail,
+                  documentUrl: (data as CreateOngDto).documentUrl,
+                },
+              }
+            : undefined,
       },
       include: {
         volunteerProfile: true,
@@ -37,6 +70,8 @@ export class UserService {
       },
     });
 
-    return user;
+    // Remove a senha do retorno por segurança
+    const { password: _, ...userWithoutPassword } = user;
+    return userWithoutPassword;
   }
 }

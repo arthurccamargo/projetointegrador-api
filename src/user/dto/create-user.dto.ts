@@ -1,17 +1,21 @@
+import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
 import { UserRole } from '@prisma/client';
-import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
+// DTO base
 export class CreateUserDto {
   @IsEmail()
   email!: string;
 
   @IsString()
-  @IsNotEmpty()
+  @MinLength(6)
   password!: string;
 
   @IsEnum(UserRole)
   role!: UserRole;
+}
 
+// DTO para Volunteer
+export class CreateVolunteerDto {
   @IsString()
   fullName!: string;
 
@@ -21,15 +25,45 @@ export class CreateUserDto {
   @IsOptional()
   birthDate?: Date;
 
-  @IsOptional() @IsString()
+  @IsOptional()
   phone?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
   city?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
   state?: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
   experiences?: string;
+}
+
+// DTO para ONG
+export class CreateOngDto {
+  @IsString()
+  cnpj!: string;
+
+  @IsString()
+  name!: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsOptional()
+  @IsString()
+  address?: string;
+
+  @IsString()
+  responsibleName!: string;
+
+  @IsString()
+  responsibleCpf!: string;
+
+  @IsString()
+  responsibleEmail!: string;
+
+  @IsOptional()
+  @IsString()
+  documentUrl?: string;
 }
