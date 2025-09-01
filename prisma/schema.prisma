@@ -20,28 +20,36 @@ enum UserStatus {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
+  id        String     @id @default(uuid())
+  email     String     @unique
   password  String
   role      UserRole
   status    UserStatus @default(PENDING)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 
   volunteerProfile VolunteerProfile?
   ongProfile       OngProfile?
 }
 
 model VolunteerProfile {
-  id          String @id @default(uuid())
-  user        User   @relation(fields: [userId], references: [id])
-  userId      String @unique
+  id          String    @id @default(uuid())
+  user        User      @relation(fields: [userId], references: [id])
+  userId      String    @unique
   fullName    String
   cpf         String
   birthDate   DateTime?
   phone       String?
+  
+  // Campos de endereço (opcionais para voluntário)
+  cep         String?
+  street      String?
+  number      String?
+  complement  String?
+  neighborhood String?
   city        String?
   state       String?
+  
   experiences String?
 }
 
@@ -52,7 +60,16 @@ model OngProfile {
   cnpj             String
   name             String
   description      String?
-  address          String?
+  
+  // Campos de endereço (obrigatórios para ONG)
+  cep              String
+  street           String
+  number           String
+  complement       String?
+  neighborhood     String
+  city             String
+  state            String
+  
   responsibleName  String
   responsibleCpf   String
   responsibleEmail String
