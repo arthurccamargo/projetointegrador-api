@@ -1,16 +1,26 @@
-import { Body, Controller, Post, UsePipes, ValidationPipe } from '@nestjs/common';
-import { UserService } from './user.service';
-import { CreateUserDto, CreateVolunteerDto, CreateOngDto } from './dto/create-user.dto';
+import {
+  Body,
+  Controller,
+  Post,
+} from "@nestjs/common";
+import { UserService } from "./user.service";
+import {
+  CreateVolunteerUserDto,
+  CreateOngUserDto,
+} from "./dto/create-user.dto";
 
-@Controller('users')
+@Controller("users")
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @Post()
-  @UsePipes(new ValidationPipe({ transform: true, whitelist: true }))
-  async create(
-    @Body() body: CreateUserDto & (CreateVolunteerDto | CreateOngDto),
-  ) {
-    return this.userService.createUser(body);
+  @Post('volunteer')
+  async createVolunteer(@Body() dto: CreateVolunteerUserDto) {
+    return this.userService.createUser(dto);
+  }
+
+  @Post('ong')
+  async createOng(@Body() dto: CreateOngUserDto) {
+    return this.userService.createUser(dto);
   }
 }
+
