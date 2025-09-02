@@ -9,6 +9,7 @@ import { BadRequestException, ValidationPipe } from "@nestjs/common"; // valida�
 async function bootstrap() {
   // app é o servidor que vai ouvir requisições HTTP
   const app = await NestFactory.create(AppModule);
+  app.enableCors();
 
   // Validação global de DTOs
   app.useGlobalPipes(
