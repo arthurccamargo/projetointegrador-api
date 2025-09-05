@@ -39,7 +39,6 @@ export class CreateVolunteerDto {
   cpf!: string;
 
   @IsOptional()
-  @IsDateString({}, { message: "Data deve estar no formato ISO" })
   birthDate?: string;
 
   @IsOptional()
