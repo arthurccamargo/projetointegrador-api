@@ -37,7 +37,7 @@ model VolunteerProfile {
   user        User      @relation(fields: [userId], references: [id])
   userId      String    @unique
   fullName    String
-  cpf         String
+  cpf         String    @unique
   birthDate   DateTime?
   phone       String?
   

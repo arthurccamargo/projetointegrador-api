@@ -23,6 +23,18 @@ export class UserService {
       throw new BadRequestException("Email already exists");
     }
 
+    // Verifica se CPF já existe apenas para VOLUNTEER
+    if (role === "VOLUNTEER") {
+      const { cpf } = data as CreateVolunteerUserDto;
+      const existingCpf = await this.prisma.volunteerProfile.findUnique({
+        where: { cpf },
+      });
+
+      if (existingCpf) {
+        throw new BadRequestException("CPF already exists");
+      }
+    }
+
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const userStatus = role === "VOLUNTEER" ? "ACTIVE" : "PENDING";
