@@ -15,7 +15,7 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true, // remove do body qualquer campo que não esteja no DTO
-      forbidNonWhitelisted: true, // retorna erro se o body tiver campos extras não previstos
+      forbidNonWhitelisted: false, // body pode ter campos extras não previstos
       transform: true, // transforma os tipos do body para o tipo definido no DTO strings para números, datas, etc
       exceptionFactory: (errors) => {
         // personaliza mensagens de erro
