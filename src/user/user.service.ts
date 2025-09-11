@@ -20,7 +20,7 @@ export class UserService {
     });
 
     if (existingUser) {
-      throw new BadRequestException("Email already exists");
+      throw new BadRequestException("Email já existe");
     }
 
     // Verifica se CPF já existe apenas para VOLUNTEER
@@ -31,7 +31,19 @@ export class UserService {
       });
 
       if (existingCpf) {
-        throw new BadRequestException("CPF already exists");
+        throw new BadRequestException("CPF já existe");
+      }
+    }
+
+    // Verifica se CNPJ já existe apenas para ONG
+    if (role === "ONG") {
+      const { cnpj } = data as CreateOngUserDto;
+      const existingCnpj = await this.prisma.ongProfile.findUnique({
+        where: { cnpj },
+      });
+
+      if (existingCnpj) {
+        throw new BadRequestException("CNPJ já existe");
       }
     }
 
