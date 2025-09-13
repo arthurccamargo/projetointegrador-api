@@ -50,104 +50,110 @@ export class CreateVolunteerDto {
 
   // Campos de endereço opcionais para voluntário
   @IsOptional()
-  @IsString({ message: 'CEP deve ser uma string' })
+  @IsString({ message: "CEP deve ser uma string" })
   @Matches(/^\d{5}-?\d{3}$/, { message: "CEP deve estar no formato XXXXX-XXX" })
   cep?: string;
 
   @IsOptional()
-  @IsString({ message: 'Rua deve ser uma string' })
+  @IsString({ message: "Rua deve ser uma string" })
   street?: string;
 
   @IsOptional()
-  @IsString({ message: 'Número deve ser uma string' })
+  @IsString({ message: "Número deve ser uma string" })
   number?: string;
 
   @IsOptional()
-  @IsString({ message: 'Complemento deve ser uma string' })
+  @IsString({ message: "Complemento deve ser uma string" })
   complement?: string;
 
   @IsOptional()
-  @IsString({ message: 'Bairro deve ser uma string' })
+  @IsString({ message: "Bairro deve ser uma string" })
   neighborhood?: string;
 
   @IsOptional()
-  @IsString({ message: 'Cidade deve ser uma string' })
+  @IsString({ message: "Cidade deve ser uma string" })
   city?: string;
 
   @IsOptional()
-  @IsString({ message: 'Estado deve ser uma string' })
+  @IsString({ message: "Estado deve ser uma string" })
   state?: string;
 
   @IsOptional()
-  @IsString({ message: 'Experiências deve ser uma string' })
+  @IsString({ message: "Experiências deve ser uma string" })
   experiences?: string;
 }
 
 export class CreateOngDto {
-  @IsString({ message: 'Nome da ONG deve ser uma string' })
-  @IsNotEmpty({ message: 'Nome da ONG é obrigatório' })
+  @IsString({ message: "Nome da ONG deve ser uma string" })
+  @IsNotEmpty({ message: "Nome da ONG é obrigatório" })
   name!: string;
 
-  @IsString({ message: 'CNPJ deve ser uma string' })
-  @IsNotEmpty({ message: 'CNPJ é obrigatório' })
+  @IsString({ message: "CNPJ deve ser uma string" })
+  @IsNotEmpty({ message: "CNPJ é obrigatório" })
   @Matches(/^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/, {
     message: "CNPJ deve estar no formato XX.XXX.XXX/XXXX-XX",
   })
   cnpj!: string;
 
   @IsOptional()
-  @IsString({ message: 'Descrição deve ser uma string' })
+  @IsString({ message: "Descrição deve ser uma string" })
   description?: string;
 
   // Campos de endereço obrigatórios para ONG
-  @IsString({ message: 'CEP deve ser uma string' })
-  @IsNotEmpty({ message: 'CEP é obrigatório' })
+  @IsString({ message: "CEP deve ser uma string" })
+  @IsNotEmpty({ message: "CEP é obrigatório" })
   @Matches(/^\d{5}-?\d{3}$/, { message: "CEP deve estar no formato XXXXX-XXX" })
   cep!: string;
 
-  @IsString({ message: 'Rua deve ser uma string' })
-  @IsNotEmpty({ message: 'Rua é obrigatória' })
+  @IsString({ message: "Rua deve ser uma string" })
+  @IsNotEmpty({ message: "Rua é obrigatória" })
   street!: string;
 
-  @IsString({ message: 'Número deve ser uma string' })
-  @IsNotEmpty({ message: 'Número é obrigatório' })
-  number!: string;
+  @IsOptional()
+  @IsString({ message: "Número deve ser uma string" })
+  number?: string;
 
   @IsOptional()
-  @IsString({ message: 'Complemento deve ser uma string' })
+  @IsString({ message: "Complemento deve ser uma string" })
   complement?: string;
 
-  @IsString({ message: 'Bairro deve ser uma string' })
-  @IsNotEmpty({ message: 'Bairro é obrigatório' })
+  @IsString({ message: "Bairro deve ser uma string" })
+  @IsNotEmpty({ message: "Bairro é obrigatório" })
   neighborhood!: string;
 
-  @IsString({ message: 'Cidade deve ser uma string' })
-  @IsNotEmpty({ message: 'Cidade é obrigatória' })
+  @IsString({ message: "Cidade deve ser uma string" })
+  @IsNotEmpty({ message: "Cidade é obrigatória" })
   city!: string;
 
-  @IsString({ message: 'Estado deve ser uma string' })
-  @IsNotEmpty({ message: 'Estado é obrigatório' })
+  @IsString({ message: "Estado deve ser uma string" })
+  @IsNotEmpty({ message: "Estado é obrigatório" })
   state!: string;
 
-  @IsString({ message: 'Nome do responsável deve ser uma string' })
-  @IsNotEmpty({ message: 'Nome do responsável é obrigatório' })
+  @IsString({ message: "Nome do responsável deve ser uma string" })
+  @IsNotEmpty({ message: "Nome do responsável é obrigatório" })
   responsibleName!: string;
 
-  @IsString({ message: 'CPF do responsável deve ser uma string' })
-  @IsNotEmpty({ message: 'CPF do responsável é obrigatório' })
+  @IsString({ message: "CPF do responsável deve ser uma string" })
+  @IsNotEmpty({ message: "CPF do responsável é obrigatório" })
   @Matches(/^\d{3}\.\d{3}\.\d{3}-\d{2}$/, {
     message: "CPF deve estar no formato XXX.XXX.XXX-XX",
   })
   responsibleCpf!: string;
 
-  @IsEmail({}, { message: 'Email do responsável deve ser um email válido' })
-  @IsNotEmpty({ message: 'Email do responsável é obrigatório' })
+  @IsEmail({}, { message: "Email do responsável deve ser um email válido" })
+  @IsNotEmpty({ message: "Email do responsável é obrigatório" })
   responsibleEmail!: string;
 
   @IsOptional()
-  @IsString({ message: 'URL do documento deve ser uma string' })
+  @IsString({ message: "URL do documento deve ser uma string" })
   documentUrl?: string;
 }
 
-export class CreateVolunteerUserDto extends IntersectionType(CreateUserDto, CreateVolunteerDto) {}
-export class CreateOngUserDto extends IntersectionType(CreateUserDto, CreateOngDto) {}
+export class CreateVolunteerUserDto extends IntersectionType(
+  CreateUserDto,
+  CreateVolunteerDto
+) {}
+export class CreateOngUserDto extends IntersectionType(
+  CreateUserDto,
+  CreateOngDto
+) {}
