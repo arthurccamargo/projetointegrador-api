@@ -64,7 +64,7 @@ model OngProfile {
   // Campos de endereço (obrigatórios para ONG)
   cep              String
   street           String
-  number           String
+  number           String?
   complement       String?
   neighborhood     String
   city             String
