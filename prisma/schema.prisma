@@ -49,8 +49,9 @@ model VolunteerProfile {
   neighborhood String?
   city        String?
   state       String?
-  
   experiences String?
+
+  applications  EventApplication[]
 }
 
 model OngProfile {
@@ -75,4 +76,60 @@ model OngProfile {
   responsibleEmail String
   documentUrl      String?
   status           String @default("PENDING")
+
+  events           Event[]
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relacionamento: uma categoria pode ter vários eventos
+  events    Event[]
+}
+
+enum ApplicationStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  CANCELLED
+}
+
+model Event {
+  id              String         @id @default(uuid())
+  title           String
+  description     String?
+  startDate       DateTime
+  durationMinutes Int
+  location        String
+  maxCandidates   Int
+
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  // Relacionamento com ONG
+  ong             OngProfile     @relation(fields: [ongId], references: [id])
+  ongId           String
+
+  // Relacionamento com Categoria
+  category        Category       @relation(fields: [categoryId], references: [id])
+  categoryId      String
+
+  // Voluntários que se candidataram
+  applications    EventApplication[]
+}
+
+model EventApplication {
+  id          String            @id @default(uuid())
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  status      ApplicationStatus @default(PENDING)
+
+  // Relacionamentos
+  event       Event             @relation(fields: [eventId], references: [id])
+  eventId     String
+  volunteer   VolunteerProfile  @relation(fields: [volunteerId], references: [id])
+  volunteerId String
 }
