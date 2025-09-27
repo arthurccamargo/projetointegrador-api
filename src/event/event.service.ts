@@ -7,7 +7,18 @@ import { PrismaService } from "../../prisma/prisma.service";
 export class EventService {
   constructor(private prisma: PrismaService) {}
 
-  async create(data: CreateEventDto) {
+  // combina dados do body (DTO) com dados internos (JWT) em um único objeto
+  async create(data: CreateEventDto & { userId: string }) {
+    const ongProfile = await this.prisma.ongProfile.findUnique({
+      where: { userId: data.userId },
+    });
+
+    if (!ongProfile) {
+      throw new NotFoundException(
+        "Perfil de ONG não encontrado para este usuário"
+      );
+    }
+
     return this.prisma.event.create({
       data: {
         title: data.title,
@@ -17,7 +28,7 @@ export class EventService {
         location: data.location,
         maxCandidates: data.maxCandidates,
         categoryId: data.categoryId,
-        ongId: req.user.userId,
+        ongId: ongProfile.id,
       },
     });
   }

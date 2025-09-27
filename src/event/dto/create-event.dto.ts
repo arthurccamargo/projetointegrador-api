@@ -37,5 +37,5 @@ export class CreateEventDto {
 
   @IsString()
   @IsNotEmpty()
-  ongId!: string;
+  userId!: string;
 }
