@@ -23,7 +23,6 @@ export class EventApplicationService {
 
     const event = await this.prisma.event.findUnique({
       where: { id: dto.eventId },
-      include: { applications: true },
     });
 
     if (!event) throw new NotFoundException("Evento não encontrado");
@@ -32,11 +31,13 @@ export class EventApplicationService {
     const diffHours =
       (event.startDate.getTime() - new Date().getTime()) / (1000 * 60 * 60);
     if (diffHours < 48) {
-      throw new BadRequestException("Não é possível se candidatar a menos de 48h do evento");
+      throw new BadRequestException(
+        "Não é possível se candidatar a menos de 48h do evento",
+      );
     }
 
-    // regra: limite de candidatos
-    if (event.applications.length >= event.maxCandidates) {
+    // regra: limite de candidatos (usando campo currentCandidates)
+    if (event.currentCandidates >= event.maxCandidates) {
       throw new BadRequestException("Número máximo de candidatos atingido");
     }
 
@@ -51,17 +52,29 @@ export class EventApplicationService {
       throw new BadRequestException("Você já se candidatou a este evento");
     }
 
-    return this.prisma.eventApplication.create({
-      data: {
-        eventId: dto.eventId,
-        volunteerId: volunteer.id,
-      },
-    });
+    // transação para consistência
+    const [application] = await this.prisma.$transaction([
+      this.prisma.eventApplication.create({
+        data: {
+          eventId: dto.eventId,
+          volunteerId: volunteer.id,
+        },
+      }),
+      this.prisma.event.update({
+        where: { id: dto.eventId },
+        data: { currentCandidates: { increment: 1 } },
+      }),
+    ]);
+
+    return application;
   }
 
   // ONG aceita ou rejeita candidatura
-  async updateStatus(id: string, dto: UpdateEventApplicationDto, userId: string) {
-    // verificar se o user é ONG
+  async updateStatus(
+    id: string,
+    dto: UpdateEventApplicationDto,
+    userId: string,
+  ) {
     const ongProfile = await this.prisma.ongProfile.findUnique({
       where: { userId },
     });
@@ -69,7 +82,6 @@ export class EventApplicationService {
       throw new ForbiddenException("Usuário não é uma ONG válida");
     }
 
-    // carregar candidatura + evento
     const application = await this.prisma.eventApplication.findUnique({
       where: { id },
       include: { event: true },
@@ -105,17 +117,27 @@ export class EventApplicationService {
       throw new ForbiddenException("Você não pertence a essa candidatura");
     }
 
-    // regra: só pode cancelar até 48h antes
     const diffHours =
       (application.event.startDate.getTime() - new Date().getTime()) /
       (1000 * 60 * 60);
     if (diffHours < 48) {
-      throw new BadRequestException("Não é possível cancelar a menos de 48h do evento");
+      throw new BadRequestException(
+        "Não é possível cancelar a menos de 48h do evento",
+      );
     }
 
-    return this.prisma.eventApplication.update({
-      where: { id },
-      data: { status: "CANCELLED" },
-    });
+    // transação: marca como CANCELLED e decrementa contador
+    const [cancelled] = await this.prisma.$transaction([
+      this.prisma.eventApplication.update({
+        where: { id },
+        data: { status: "CANCELLED" },
+      }),
+      this.prisma.event.update({
+        where: { id: application.eventId },
+        data: { currentCandidates: { decrement: 1 } },
+      }),
+    ]);
+
+    return cancelled;
   }
 }
