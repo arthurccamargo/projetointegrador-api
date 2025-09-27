@@ -56,9 +56,21 @@ export class EventService {
     return event;
   }
 
-  async update(id: string, data: UpdateEventDto) {
+  async update(id: string, data: UpdateEventDto, userId: string) {
     const event = await this.prisma.event.findUnique({ where: { id } });
     if (!event) throw new NotFoundException("Evento não encontrado");
+
+    const ongProfile = await this.prisma.ongProfile.findUnique({
+      where: { userId },
+    });
+    if (!ongProfile) {
+      throw new NotFoundException(
+        "Perfil de ONG não encontrado para este usuário"
+      );
+    }
+    if (event.ongId !== ongProfile.id) {
+      throw new NotFoundException("Evento não pertence a esta ONG");
+    }
 
     return this.prisma.event.update({
       where: { id },
@@ -69,9 +81,22 @@ export class EventService {
     });
   }
 
-  async remove(id: string) {
+  async remove(id: string, userId: string) {
+    const ongProfile = await this.prisma.ongProfile.findUnique({
+      where: { userId },
+    });
+
+    if (!ongProfile) {
+      throw new NotFoundException(
+        "Perfil de ONG não encontrado para este usuário"
+      );
+    }
+
     const event = await this.prisma.event.findUnique({ where: { id } });
     if (!event) throw new NotFoundException("Evento não encontrado");
+    if (event.ongId !== ongProfile.id) {
+      throw new NotFoundException("Evento não pertence a esta ONG");
+    }
 
     return this.prisma.event.delete({ where: { id } });
   }

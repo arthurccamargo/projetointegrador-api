@@ -7,7 +7,7 @@ import {
 import { Reflector } from "@nestjs/core";
 
 /*
- verifica se o usuário tem a role necessária para acessar o endpoint
+ verifica se o usuário tem a role necessária para acessar o endpoint, exemplo:
     - Usuário tem role: "VOLUNTEER"
 
     - Endpoint exige @Roles("ONG")

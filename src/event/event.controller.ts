@@ -7,7 +7,6 @@ import {
   Patch,
   Delete,
   UseGuards,
-  Req,
 } from "@nestjs/common";
 import { EventService } from "./event.service";
 import { CreateEventDto } from "./dto/create-event.dto";
@@ -43,12 +42,18 @@ export class EventController {
   }
 
   @Patch(":id")
-  update(@Param("id") id: string, @Body() dto: UpdateEventDto) {
-    return this.eventService.update(id, dto);
+  @Roles("ONG")
+  update(
+    @Param("id") id: string,
+    @Body() dto: UpdateEventDto,
+    @CurrentUser() user: UserPayload
+  ) {
+    return this.eventService.update(id, dto, user.sub);
   }
 
   @Delete(":id")
-  remove(@Param("id") id: string) {
-    return this.eventService.remove(id);
+  @Roles("ONG", "ADMIN")
+  remove(@Param("id") id: string, @CurrentUser() user: UserPayload) {
+    return this.eventService.remove(id, user.sub);
   }
 }
