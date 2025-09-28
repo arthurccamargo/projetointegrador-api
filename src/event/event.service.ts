@@ -100,4 +100,18 @@ export class EventService {
 
     return this.prisma.event.delete({ where: { id } });
   }
+
+  async findEventsByOngUserId(userId: string) {
+    const ongProfile = await this.prisma.ongProfile.findUnique({
+      where: { userId: userId },
+    });
+    if (!ongProfile) {
+      throw new NotFoundException("Perfil de ONG não encontrado para este usuário");
+    }
+    return this.prisma.event.findMany({
+      where: { ongId: ongProfile.id },
+      include: { category: true, ong: false },
+      orderBy: { startDate: "asc" },
+    });
+  }
 }

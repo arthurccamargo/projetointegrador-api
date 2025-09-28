@@ -36,6 +36,12 @@ export class EventController {
     return this.eventService.findAll();
   }
 
+  @Get("my")
+  @Roles("ONG", "ADMIN")
+  findMyEvents(@CurrentUser() user: UserPayload) {
+    return this.eventService.findEventsByOngUserId(user.sub);
+  }
+
   @Get(":id")
   findOne(@Param("id") id: string) {
     return this.eventService.findOne(id);
