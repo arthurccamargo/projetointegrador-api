@@ -1,10 +1,100 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
+model User {
+  id               String            @id @default(uuid())
+  email            String            @unique
+  password         String
+  role             UserRole
+  status           UserStatus        @default(PENDING)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  ongProfile       OngProfile?
+  volunteerProfile VolunteerProfile?
+}
+
+model VolunteerProfile {
+  id           String             @id @default(uuid())
+  userId       String             @unique
+  fullName     String
+  cpf          String             @unique
+  birthDate    DateTime?
+  phone        String?
+  cep          String?
+  street       String?
+  number       String?
+  complement   String?
+  neighborhood String?
+  city         String?
+  state        String?
+  experiences  String?
+  applications EventApplication[]
+  user         User               @relation(fields: [userId], references: [id])
+}
+
+model OngProfile {
+  id               String  @id @default(uuid())
+  userId           String  @unique
+  cnpj             String  @unique
+  name             String
+  description      String?
+  cep              String
+  street           String
+  number           String?
+  complement       String?
+  neighborhood     String
+  city             String
+  state            String
+  responsibleName  String
+  responsibleCpf   String
+  responsibleEmail String
+  documentUrl      String?
+  status           String  @default("PENDING")
+  events           Event[]
+  user             User    @relation(fields: [userId], references: [id])
+}
+
+model Category {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  events    Event[]
+}
+
+model Event {
+  id                String             @id @default(uuid())
+  title             String
+  description       String?
+  startDate         DateTime
+  durationMinutes   Int
+  location          String
+  maxCandidates     Int
+  currentCandidates Int                @default(0)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  ongId             String
+  categoryId        String
+  category          Category           @relation(fields: [categoryId], references: [id])
+  ong               OngProfile         @relation(fields: [ongId], references: [id])
+  applications      EventApplication[]
+}
+
+model EventApplication {
+  id          String            @id @default(uuid())
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  status      ApplicationStatus @default(PENDING)
+  eventId     String
+  volunteerId String
+  event       Event             @relation(fields: [eventId], references: [id])
+  volunteer   VolunteerProfile  @relation(fields: [volunteerId], references: [id])
 }
 
 enum UserRole {
@@ -19,119 +109,9 @@ enum UserStatus {
   BLOCKED
 }
 
-model User {
-  id        String     @id @default(uuid())
-  email     String     @unique
-  password  String
-  role      UserRole
-  status    UserStatus @default(PENDING)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-
-  volunteerProfile VolunteerProfile?
-  ongProfile       OngProfile?
-}
-
-model VolunteerProfile {
-  id          String    @id @default(uuid())
-  user        User      @relation(fields: [userId], references: [id])
-  userId      String    @unique
-  fullName    String
-  cpf         String    @unique
-  birthDate   DateTime?
-  phone       String?
-  
-  // Campos de endereço (opcionais para voluntário)
-  cep         String?
-  street      String?
-  number      String?
-  complement  String?
-  neighborhood String?
-  city        String?
-  state       String?
-  experiences String?
-
-  applications  EventApplication[]
-}
-
-model OngProfile {
-  id               String @id @default(uuid())
-  user             User   @relation(fields: [userId], references: [id])
-  userId           String @unique
-  cnpj             String @unique
-  name             String
-  description      String?
-  
-  // Campos de endereço (obrigatórios para ONG)
-  cep              String
-  street           String
-  number           String?
-  complement       String?
-  neighborhood     String
-  city             String
-  state            String
-  
-  responsibleName  String
-  responsibleCpf   String
-  responsibleEmail String
-  documentUrl      String?
-  status           String @default("PENDING")
-
-  events           Event[]
-}
-
-model Category {
-  id        String   @id @default(uuid())
-  name      String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relacionamento: uma categoria pode ter vários eventos
-  events    Event[]
-}
-
 enum ApplicationStatus {
   PENDING
   ACCEPTED
   REJECTED
   CANCELLED
-}
-
-model Event {
-  id              String         @id @default(uuid())
-  title           String
-  description     String?
-  startDate       DateTime
-  durationMinutes Int
-  location        String
-  maxCandidates   Int
-  currentCandidates Int          @default(0)
-
-
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
-
-  // Relacionamento com ONG
-  ong             OngProfile     @relation(fields: [ongId], references: [id])
-  ongId           String
-
-  // Relacionamento com Categoria
-  category        Category       @relation(fields: [categoryId], references: [id])
-  categoryId      String
-
-  // Voluntários que se candidataram
-  applications    EventApplication[]
-}
-
-model EventApplication {
-  id          String            @id @default(uuid())
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-  status      ApplicationStatus @default(PENDING)
-
-  // Relacionamentos
-  event       Event             @relation(fields: [eventId], references: [id])
-  eventId     String
-  volunteer   VolunteerProfile  @relation(fields: [volunteerId], references: [id])
-  volunteerId String
 }

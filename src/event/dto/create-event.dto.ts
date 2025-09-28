@@ -34,8 +34,4 @@ export class CreateEventDto {
   @IsString()
   @IsNotEmpty()
   categoryId!: string;
-
-  @IsString()
-  @IsNotEmpty()
-  userId!: string;
 }
