@@ -79,7 +79,7 @@ export class EventApplicationService {
     }
     return this.prisma.eventApplication.findMany({
       where: { volunteerId: volunteer.id },
-      include: { event: { include: { category: true } } },
+      include: { event: { include: { ong: true, category: true } } },
     });
   }
 
