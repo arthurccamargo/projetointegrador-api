@@ -97,6 +97,11 @@ export class EventService {
     if (event.ongId !== ongProfile.id) {
       throw new NotFoundException("Evento não pertence a esta ONG");
     }
+    
+    await this.prisma.eventApplication.updateMany({
+      where: { eventId: id },
+      data: { status: "CANCELLED" },
+    });
 
     return this.prisma.event.delete({ where: { id } });
   }
