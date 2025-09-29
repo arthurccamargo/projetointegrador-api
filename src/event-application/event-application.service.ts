@@ -69,6 +69,20 @@ export class EventApplicationService {
     return application;
   }
 
+  // Lista todas as candidaturas do voluntário logado
+  async findAllByVolunteer(userId: string) {
+    const volunteer = await this.prisma.volunteerProfile.findUnique({
+      where: { userId },
+    });
+    if (!volunteer) {
+      throw new ForbiddenException("Usuário não é um voluntário válido");
+    }
+    return this.prisma.eventApplication.findMany({
+      where: { volunteerId: volunteer.id },
+      include: { event: { include: { ong: true, category: true } } },
+    });
+  }
+
   // ONG aceita ou rejeita candidatura
   async updateStatus(
     id: string,

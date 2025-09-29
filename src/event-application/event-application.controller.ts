@@ -1,4 +1,4 @@
-import { Controller, Post, Patch, Param, Body, UseGuards } from "@nestjs/common";
+import { Controller, Post, Patch, Param, Body, UseGuards, Get } from "@nestjs/common";
 import { EventApplicationService } from "./event-application.service";
 import { CreateEventApplicationDto } from "./dto/create-event-application.dto";
 import { UpdateEventApplicationDto } from "./dto/update-event-application.dto";
@@ -17,6 +17,12 @@ export class EventApplicationController {
   @Roles("VOLUNTEER")
   apply(@Body() dto: CreateEventApplicationDto, @CurrentUser() user: UserPayload) {
     return this.service.apply(dto, user.sub);
+  }
+
+  @Get()
+  @Roles("VOLUNTEER")
+  findAllByVolunteer(@CurrentUser() user: UserPayload) {
+    return this.service.findAllByVolunteer(user.sub);
   }
 
   @Patch(":id/status")
