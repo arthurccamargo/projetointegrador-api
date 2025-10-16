@@ -27,7 +27,6 @@ async function bootstrap() {
     })
   );
 
-  await app.listen(3000); // 3000 é a porta onde a API vai rodar localmente
-  console.log(`Application is running on: ${await app.getUrl()}`);
+  await app.listen(3000, '0.0.0.0'); // 3000 é a porta onde a API vai rodar localmente
 }
 bootstrap();
