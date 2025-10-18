@@ -7,6 +7,18 @@ import { PrismaService } from "../../../prisma/prisma.service";
 export class EventService {
   constructor(private prisma: PrismaService) {}
 
+  private computeStatus(event: { startDate: Date; durationMinutes: number; status?: string }) {
+    if (event.status === 'CANCELLED') return 'CANCELLED';
+
+    const now = new Date();
+    const start = new Date(event.startDate);
+    const end = new Date(start.getTime() + (event.durationMinutes || 0) * 60000);
+
+    if (now < start) return 'SCHEDULED';
+    if (now >= start && now < end) return 'IN_PROGRESS';
+    return 'COMPLETED';
+  }
+
   // combina dados do body (DTO) com dados internos (JWT) em um único objeto
   async create(data: CreateEventDto & { userId: string }) {
     const ongProfile = await this.prisma.ongProfile.findUnique({
@@ -34,10 +46,11 @@ export class EventService {
   }
 
   async findAll() {
-    return this.prisma.event.findMany({
+    const events = await this.prisma.event.findMany({
       include: { category: true, ong: true },
       orderBy: { startDate: "asc" },
     });
+    return events.map(e => ({ ...e, status: this.computeStatus(e) }));
   }
 
   async findOne(id: string) {
@@ -53,7 +66,7 @@ export class EventService {
     });
 
     if (!event) throw new NotFoundException("Evento não encontrado");
-    return event;
+    return { ...event, status: this.computeStatus(event) };
   }
 
   async update(id: string, data: UpdateEventDto, userId: string) {
@@ -98,12 +111,12 @@ export class EventService {
       throw new NotFoundException("Evento não pertence a esta ONG");
     }
     
-    await this.prisma.eventApplication.updateMany({
+    await (this.prisma.eventApplication).updateMany({
       where: { eventId: id },
       data: { status: "CANCELLED" },
     });
 
-    return this.prisma.event.update({
+    return (this.prisma.event).update({
       where: { id },
       data: { status: "CANCELLED" },
     });
@@ -116,11 +129,12 @@ export class EventService {
     if (!ongProfile) {
       throw new NotFoundException("Perfil de ONG não encontrado para este usuário");
     }
-    return this.prisma.event.findMany({
+    const events = await this.prisma.event.findMany({
       where: { ongId: ongProfile.id },
       include: { category: true, ong: false },
       orderBy: { startDate: "asc" },
     });
+    return events.map(e => ({ ...e, status: this.computeStatus(e) }));
   }
 
   async findActiveEventsByOngUserId(userId: string) {
@@ -130,14 +144,14 @@ export class EventService {
     if (!ongProfile) {
       throw new NotFoundException("Perfil de ONG não encontrado para este usuário");
     }
-    return this.prisma.event.findMany({
-      where: { 
-        ongId: ongProfile.id,
-        status: { in: ["SCHEDULED", "IN_PROGRESS"] }
-      },
+    const events = await this.prisma.event.findMany({
+      where: { ongId: ongProfile.id },
       include: { category: true, ong: false },
       orderBy: { startDate: "asc" },
     });
+    return events
+      .map(e => ({ ...e, status: this.computeStatus(e) }))
+      .filter((e) => ["SCHEDULED", "IN_PROGRESS"].includes(e.status));
   }
 
   async findPastEventsByOngUserId(userId: string) {
@@ -147,13 +161,13 @@ export class EventService {
     if (!ongProfile) {
       throw new NotFoundException("Perfil de ONG não encontrado para este usuário");
     }
-    return this.prisma.event.findMany({
-      where: { 
-        ongId: ongProfile.id,
-        status: { in: ["COMPLETED", "CANCELLED"] }
-      },
+    const events = await this.prisma.event.findMany({
+      where: { ongId: ongProfile.id },
       include: { category: true, ong: false },
       orderBy: { startDate: "desc" },
     });
+    return events
+      .map(e => ({ ...e, status: this.computeStatus(e) }))
+      .filter((e) => ["COMPLETED", "CANCELLED"].includes(e.status));
   }
 }
