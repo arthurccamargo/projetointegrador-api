@@ -4,9 +4,9 @@ import {
   NotFoundException,
   ForbiddenException,
 } from "@nestjs/common";
-import { PrismaService } from "../../prisma/prisma.service";
 import { CreateEventApplicationDto } from "./dto/create-event-application.dto";
 import { UpdateEventApplicationDto } from "./dto/update-event-application.dto";
+import { PrismaService } from "../../../prisma/prisma.service";
 
 @Injectable()
 export class EventApplicationService {

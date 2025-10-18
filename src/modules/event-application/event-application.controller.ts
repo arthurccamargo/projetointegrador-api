@@ -2,10 +2,10 @@ import { Controller, Post, Patch, Param, Body, UseGuards, Get } from "@nestjs/co
 import { EventApplicationService } from "./event-application.service";
 import { CreateEventApplicationDto } from "./dto/create-event-application.dto";
 import { UpdateEventApplicationDto } from "./dto/update-event-application.dto";
-import { JwtAuthGuard } from "../auth/guard/jwt-auth.guard";
-import { RolesGuard } from "../auth/guard/roles.guard";
-import { Roles } from "../auth/decorators/roles.decorator";
-import { CurrentUser } from "../auth/decorators/current-user.decorator";
+import { JwtAuthGuard } from "../../common/guard/jwt-auth.guard";
+import { RolesGuard } from "../../common/guard/roles.guard";
+import { Roles } from "../../common/decorators/roles.decorator";
+import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { UserPayload } from "../auth/types/users-payload";
 
 @Controller("applications")
