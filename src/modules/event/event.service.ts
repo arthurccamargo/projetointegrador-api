@@ -103,7 +103,10 @@ export class EventService {
       data: { status: "CANCELLED" },
     });
 
-    return this.prisma.event.delete({ where: { id } });
+    return this.prisma.event.update({
+      where: { id },
+      data: { status: "CANCELLED" },
+    });
   }
 
   async findEventsByOngUserId(userId: string) {
@@ -117,6 +120,40 @@ export class EventService {
       where: { ongId: ongProfile.id },
       include: { category: true, ong: false },
       orderBy: { startDate: "asc" },
+    });
+  }
+
+  async findActiveEventsByOngUserId(userId: string) {
+    const ongProfile = await this.prisma.ongProfile.findUnique({
+      where: { userId: userId },
+    });
+    if (!ongProfile) {
+      throw new NotFoundException("Perfil de ONG não encontrado para este usuário");
+    }
+    return this.prisma.event.findMany({
+      where: { 
+        ongId: ongProfile.id,
+        status: { in: ["SCHEDULED", "IN_PROGRESS"] }
+      },
+      include: { category: true, ong: false },
+      orderBy: { startDate: "asc" },
+    });
+  }
+
+  async findPastEventsByOngUserId(userId: string) {
+    const ongProfile = await this.prisma.ongProfile.findUnique({
+      where: { userId: userId },
+    });
+    if (!ongProfile) {
+      throw new NotFoundException("Perfil de ONG não encontrado para este usuário");
+    }
+    return this.prisma.event.findMany({
+      where: { 
+        ongId: ongProfile.id,
+        status: { in: ["COMPLETED", "CANCELLED"] }
+      },
+      include: { category: true, ong: false },
+      orderBy: { startDate: "desc" },
     });
   }
 }

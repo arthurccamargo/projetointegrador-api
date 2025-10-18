@@ -77,6 +77,7 @@ model Event {
   location          String
   maxCandidates     Int
   currentCandidates Int                @default(0)
+  status            EventStatus        @default(SCHEDULED)
   createdAt         DateTime           @default(now())
   updatedAt         DateTime           @updatedAt
   ongId             String
@@ -113,5 +114,12 @@ enum ApplicationStatus {
   PENDING
   ACCEPTED
   REJECTED
+  CANCELLED
+}
+
+enum EventStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
   CANCELLED
 }

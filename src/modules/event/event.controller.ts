@@ -42,6 +42,18 @@ export class EventController {
     return this.eventService.findEventsByOngUserId(user.sub);
   }
 
+  @Get("my/active")
+  @Roles("ONG")
+  findMyActiveEvents(@CurrentUser() user: UserPayload) {
+    return this.eventService.findActiveEventsByOngUserId(user.sub);
+  }
+
+  @Get("my/past")
+  @Roles("ONG")
+  findMyPastEvents(@CurrentUser() user: UserPayload) {
+    return this.eventService.findPastEventsByOngUserId(user.sub);
+  }
+
   @Get(":id")
   findOne(@Param("id") id: string) {
     return this.eventService.findOne(id);
