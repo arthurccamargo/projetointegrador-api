@@ -11,11 +11,11 @@ import {
 import { EventService } from "./event.service";
 import { CreateEventDto } from "./dto/create-event.dto";
 import { UpdateEventDto } from "./dto/update-event.dto";
-import { RolesGuard } from "../auth/guard/roles.guard";
-import { JwtAuthGuard } from "../auth/guard/jwt-auth.guard";
-import { Roles } from "../auth/decorators/roles.decorator";
-import { CurrentUser } from "../auth/decorators/current-user.decorator";
+import { RolesGuard } from "../../common/guard/roles.guard";
+import { JwtAuthGuard } from "../../common/guard/jwt-auth.guard";
+import { Roles } from "../../common/decorators/roles.decorator";
 import { UserPayload } from "../auth/types/users-payload";
+import { CurrentUser } from "../../common/decorators/current-user.decorator";
 
 @Controller("events")
 @UseGuards(JwtAuthGuard, RolesGuard) // protege todas as rotas do controller
@@ -31,15 +31,27 @@ export class EventController {
     });
   }
 
-  @Get()
-  findAll() {
-    return this.eventService.findAll();
+  @Get() // GET eventos SCHEDULED nao aplicados pelo user ou todos eventos caso visitante
+  findAll(@CurrentUser() user: UserPayload) {
+    return this.eventService.findAll(user.sub);
   }
 
   @Get("my")
   @Roles("ONG", "ADMIN")
   findMyEvents(@CurrentUser() user: UserPayload) {
     return this.eventService.findEventsByOngUserId(user.sub);
+  }
+
+  @Get("my/active")
+  @Roles("ONG")
+  findMyActiveEvents(@CurrentUser() user: UserPayload) {
+    return this.eventService.findActiveEventsByOngUserId(user.sub);
+  }
+
+  @Get("my/past")
+  @Roles("ONG")
+  findMyPastEvents(@CurrentUser() user: UserPayload) {
+    return this.eventService.findPastEventsByOngUserId(user.sub);
   }
 
   @Get(":id")

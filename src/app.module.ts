@@ -5,12 +5,11 @@ Módulo raiz do NestJS. Define quais módulos, controllers e providers serão ca
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from '../prisma/prisma.module';
-import { UserModule } from './user/user.module';
-import { AuthModule } from './auth/auth.module';
-import { CategoryModule } from './category/category.module';
-import { EventModule } from './event/event.module';
-import { EventApplicationModule } from './event-application/event-application.module';
-
+import { UserModule } from './modules/user/user.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { CategoryModule } from './modules/category/category.module';
+import { EventModule } from './modules/event/event.module';
+import { EventApplicationModule } from './modules/event-application/event-application.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
