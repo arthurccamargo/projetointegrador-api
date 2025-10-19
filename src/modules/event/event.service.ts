@@ -45,14 +45,38 @@ export class EventService {
     });
   }
 
-  async findAll() {
+  async findAll(userId?: string) {
     const events = await this.prisma.event.findMany({
-      include: { category: true, ong: true },
+      include: { 
+        category: true, 
+        ong: true,
+        applications: true
+      },
       orderBy: { startDate: "asc" },
     });
+
+    let volunteerProfileId: string | null = null;
+    if (userId) {
+      const volunteerProfile = await this.prisma.volunteerProfile.findUnique({
+        where: { userId },
+      });
+      volunteerProfileId = volunteerProfile?.id || null;
+    }
+
     return events
       .map(e => ({ ...e, status: this.computeStatus(e) }))
-      .filter(e => ["SCHEDULED"].includes(e.status));
+      .filter(e => {
+        if (!["SCHEDULED"].includes(e.status)) return false;
+        
+        // Se não há voluntário logado, retorna todos eventos ativos
+        if (!volunteerProfileId) return true;
+        
+        // Filtrar eventos onde o voluntário NÃO se aplicou ainda
+        const hasApplied = e.applications.some(
+          app => app.volunteerId === volunteerProfileId
+        );
+        return !hasApplied;
+      });
   }
 
   async findOne(id: string) {

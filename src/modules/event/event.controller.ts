@@ -31,9 +31,9 @@ export class EventController {
     });
   }
 
-  @Get()
-  findAll() {
-    return this.eventService.findAll();
+  @Get() // GET eventos SCHEDULED nao aplicados pelo user ou todos eventos caso visitante
+  findAll(@CurrentUser() user: UserPayload) {
+    return this.eventService.findAll(user.sub);
   }
 
   @Get("my")
