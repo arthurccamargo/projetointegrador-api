@@ -19,10 +19,16 @@ export class EventApplicationController {
     return this.service.apply(dto, user.sub);
   }
 
-  @Get()
+  @Get("past") // Histórico: eventos COMPLETED ou CANCELLED onde o voluntário tinha candidatura
   @Roles("VOLUNTEER")
-  findAllByVolunteer(@CurrentUser() user: UserPayload) {
-    return this.service.findAllByVolunteer(user.sub);
+  findMyPastEvents(@CurrentUser() user: UserPayload) {
+    return this.service.findMyPastEvents(user.sub);
+  }
+
+  @Get("active") // Eventos ativos: SCHEDULED ou IN_PROGRESS com candidatura ativa
+  @Roles("VOLUNTEER")
+  findMyActiveEvents(@CurrentUser() user: UserPayload) {
+    return this.service.findMyActiveEvents(user.sub);
   }
 
   @Patch(":id/status")

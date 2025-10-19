@@ -69,18 +69,79 @@ export class EventApplicationService {
     return application;
   }
 
-  // Lista todas as candidaturas do voluntário logado
-  async findAllByVolunteer(userId: string) {
+  private computeStatus(event: { startDate: Date; durationMinutes: number; status?: string }) {
+    if (event.status === 'CANCELLED') return 'CANCELLED';
+
+    const now = new Date();
+    const start = new Date(event.startDate);
+    const end = new Date(start.getTime() + (event.durationMinutes || 0) * 60000);
+
+    if (now < start) return 'SCHEDULED';
+    if (now >= start && now < end) return 'IN_PROGRESS';
+    return 'COMPLETED';
+  }
+
+  // Lista eventos do histórico: COMPLETED/CANCELLED OU eventos que o voluntário cancelou candidatura
+  async findMyPastEvents(userId: string) {
     const volunteer = await this.prisma.volunteerProfile.findUnique({
       where: { userId },
     });
     if (!volunteer) {
       throw new ForbiddenException("Usuário não é um voluntário válido");
     }
-    return this.prisma.eventApplication.findMany({
+
+    const applications = await this.prisma.eventApplication.findMany({
       where: { volunteerId: volunteer.id },
       include: { event: { include: { ong: true, category: true } } },
     });
+
+    return applications
+      .map(app => ({
+        ...app.event,
+        status: this.computeStatus(app.event),
+        applicationStatus: app.status,
+        applicationId: app.id
+      }))
+      .filter(event => {
+        if (["COMPLETED", "CANCELLED"].includes(event.status)) return true;
+        
+        if (["SCHEDULED", "IN_PROGRESS"].includes(event.status) && event.applicationStatus === "CANCELLED") {
+          return true;
+        }
+        
+        return false;
+      });
+  }
+
+  // Lista eventos SCHEDULED ou IN_PROGRESS onde o voluntário tem candidatura ativa
+  async findMyActiveEvents(userId: string) {
+    const volunteer = await this.prisma.volunteerProfile.findUnique({
+      where: { userId },
+    });
+    if (!volunteer) {
+      throw new ForbiddenException("Usuário não é um voluntário válido");
+    }
+
+    const applications = await this.prisma.eventApplication.findMany({
+      where: { 
+        volunteerId: volunteer.id,
+        status: { in: ["PENDING", "ACCEPTED"] }
+      },
+      include: { 
+        event: { 
+          include: { ong: true, category: true } 
+        } 
+      },
+    });
+
+    return applications
+      .map(app => ({
+        ...app.event,
+        status: this.computeStatus(app.event),
+        applicationStatus: app.status,
+        applicationId: app.id
+      }))
+      .filter(event => ["SCHEDULED", "IN_PROGRESS"].includes(event.status));
   }
 
   // ONG aceita ou rejeita candidatura
