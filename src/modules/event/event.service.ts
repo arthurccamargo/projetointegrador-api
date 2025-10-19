@@ -50,7 +50,9 @@ export class EventService {
       include: { category: true, ong: true },
       orderBy: { startDate: "asc" },
     });
-    return events.map(e => ({ ...e, status: this.computeStatus(e) }));
+    return events
+      .map(e => ({ ...e, status: this.computeStatus(e) }))
+      .filter(e => ["SCHEDULED"].includes(e.status));
   }
 
   async findOne(id: string) {
@@ -111,12 +113,12 @@ export class EventService {
       throw new NotFoundException("Evento não pertence a esta ONG");
     }
     
-    await (this.prisma.eventApplication).updateMany({
+    await this.prisma.eventApplication.updateMany({
       where: { eventId: id },
       data: { status: "CANCELLED" },
     });
 
-    return (this.prisma.event).update({
+    return this.prisma.event.update({
       where: { id },
       data: { status: "CANCELLED" },
     });
