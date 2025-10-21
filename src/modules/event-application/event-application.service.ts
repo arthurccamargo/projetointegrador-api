@@ -27,15 +27,6 @@ export class EventApplicationService {
 
     if (!event) throw new NotFoundException("Evento não encontrado");
 
-    // regra: até 48h antes do evento
-    const diffHours =
-      (event.startDate.getTime() - new Date().getTime()) / (1000 * 60 * 60);
-    if (diffHours < 48) {
-      throw new BadRequestException(
-        "Não é possível se candidatar a menos de 48h do evento"
-      );
-    }
-
     // regra: limite de candidatos (usando campo currentCandidates)
     if (event.currentCandidates >= event.maxCandidates) {
       throw new BadRequestException("Número máximo de candidatos atingido");
@@ -256,15 +247,6 @@ export class EventApplicationService {
     if (!application) throw new NotFoundException("Candidatura não encontrada");
     if (application.volunteerId !== volunteer.id) {
       throw new ForbiddenException("Você não pertence a essa candidatura");
-    }
-
-    const diffHours =
-      (application.event.startDate.getTime() - new Date().getTime()) /
-      (1000 * 60 * 60);
-    if (diffHours < 48) {
-      throw new BadRequestException(
-        "Não é possível cancelar a menos de 48h do evento"
-      );
     }
 
     // transação: marca como CANCELLED e decrementa contador
