@@ -31,6 +31,15 @@ export class EventApplicationController {
     return this.service.findMyActiveEvents(user.sub);
   }
 
+  @Get("event/:eventId")
+  @Roles("ONG")
+  findAllByEventForOng(
+    @Param("eventId") eventId: string,
+    @CurrentUser() user: UserPayload,
+  ) {
+    return this.service.findAllByEventForOng(eventId, user.sub);
+  }
+
   @Patch(":id/status")
   @Roles("ONG")
   updateStatus(
