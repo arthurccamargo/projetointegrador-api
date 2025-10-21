@@ -153,7 +153,7 @@ export class EventApplicationService {
       .filter((event) => ["SCHEDULED", "IN_PROGRESS"].includes(event.status));
   }
 
-  // ONG lista candidaturas de um evento específico
+  // ONG lista candidaturas PENDING ou ACCEPTED de um evento específico
   async findAllByEventForOng(eventId: string, userId: string) {
     const ongProfile = await this.prisma.ongProfile.findUnique({
       where: { userId },
@@ -174,7 +174,10 @@ export class EventApplicationService {
     }
 
     return this.prisma.eventApplication.findMany({
-      where: { eventId },
+      where: {
+        eventId,
+        status: { in: ["PENDING", "ACCEPTED"] },
+      },
       include: {
         volunteer: {
           select: {
@@ -209,6 +212,27 @@ export class EventApplicationService {
       throw new ForbiddenException("Este evento não pertence à sua ONG");
     }
 
+    // Se o novo status for REJECTED e o antigo era PENDING ou ACCEPTED,
+    // a vaga deve ser liberada.
+    if (
+      dto.status === "REJECTED" &&
+      (application.status === "PENDING" || application.status === "ACCEPTED")
+    ) {
+      // Transação para garantir consistência
+      const [updatedApplication] = await this.prisma.$transaction([
+        this.prisma.eventApplication.update({
+          where: { id },
+          data: { status: "REJECTED" },
+        }),
+        this.prisma.event.update({
+          where: { id: application.eventId },
+          data: { currentCandidates: { decrement: 1 } },
+        }),
+      ]);
+      return updatedApplication;
+    }
+
+    // Para outros status (ex: PENDING -> ACCEPTED), apenas atualiza
     return this.prisma.eventApplication.update({
       where: { id },
       data: { status: dto.status },
