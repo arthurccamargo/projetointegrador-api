@@ -27,15 +27,6 @@ export class EventApplicationService {
 
     if (!event) throw new NotFoundException("Evento não encontrado");
 
-    // regra: até 48h antes do evento
-    const diffHours =
-      (event.startDate.getTime() - new Date().getTime()) / (1000 * 60 * 60);
-    if (diffHours < 48) {
-      throw new BadRequestException(
-        "Não é possível se candidatar a menos de 48h do evento",
-      );
-    }
-
     // regra: limite de candidatos (usando campo currentCandidates)
     if (event.currentCandidates >= event.maxCandidates) {
       throw new BadRequestException("Número máximo de candidatos atingido");
@@ -69,16 +60,22 @@ export class EventApplicationService {
     return application;
   }
 
-  private computeStatus(event: { startDate: Date; durationMinutes: number; status?: string }) {
-    if (event.status === 'CANCELLED') return 'CANCELLED';
+  private computeStatus(event: {
+    startDate: Date;
+    durationMinutes: number;
+    status?: string;
+  }) {
+    if (event.status === "CANCELLED") return "CANCELLED";
 
     const now = new Date();
     const start = new Date(event.startDate);
-    const end = new Date(start.getTime() + (event.durationMinutes || 0) * 60000);
+    const end = new Date(
+      start.getTime() + (event.durationMinutes || 0) * 60000
+    );
 
-    if (now < start) return 'SCHEDULED';
-    if (now >= start && now < end) return 'IN_PROGRESS';
-    return 'COMPLETED';
+    if (now < start) return "SCHEDULED";
+    if (now >= start && now < end) return "IN_PROGRESS";
+    return "COMPLETED";
   }
 
   // Lista eventos do histórico: COMPLETED/CANCELLED OU eventos que o voluntário cancelou candidatura
@@ -96,19 +93,22 @@ export class EventApplicationService {
     });
 
     return applications
-      .map(app => ({
+      .map((app) => ({
         ...app.event,
         status: this.computeStatus(app.event),
         applicationStatus: app.status,
-        applicationId: app.id
+        applicationId: app.id,
       }))
-      .filter(event => {
+      .filter((event) => {
         if (["COMPLETED", "CANCELLED"].includes(event.status)) return true;
-        
-        if (["SCHEDULED", "IN_PROGRESS"].includes(event.status) && event.applicationStatus === "CANCELLED") {
+
+        if (
+          ["SCHEDULED", "IN_PROGRESS"].includes(event.status) &&
+          event.applicationStatus === "CANCELLED"
+        ) {
           return true;
         }
-        
+
         return false;
       });
   }
@@ -123,32 +123,68 @@ export class EventApplicationService {
     }
 
     const applications = await this.prisma.eventApplication.findMany({
-      where: { 
+      where: {
         volunteerId: volunteer.id,
-        status: { in: ["PENDING", "ACCEPTED"] }
+        status: { in: ["PENDING", "ACCEPTED"] },
       },
-      include: { 
-        event: { 
-          include: { ong: true, category: true } 
-        } 
+      include: {
+        event: {
+          include: { ong: true, category: true },
+        },
       },
     });
 
     return applications
-      .map(app => ({
+      .map((app) => ({
         ...app.event,
         status: this.computeStatus(app.event),
         applicationStatus: app.status,
-        applicationId: app.id
+        applicationId: app.id,
       }))
-      .filter(event => ["SCHEDULED", "IN_PROGRESS"].includes(event.status));
+      .filter((event) => ["SCHEDULED", "IN_PROGRESS"].includes(event.status));
+  }
+
+  // ONG lista candidaturas PENDING ou ACCEPTED de um evento específico
+  async findAllByEventForOng(eventId: string, userId: string) {
+    const ongProfile = await this.prisma.ongProfile.findUnique({
+      where: { userId },
+    });
+    if (!ongProfile) {
+      throw new ForbiddenException("Usuário não é uma ONG válida");
+    }
+
+    const event = await this.prisma.event.findUnique({
+      where: { id: eventId },
+    });
+
+    if (!event) {
+      throw new NotFoundException("Evento não encontrado");
+    }
+    if (event.ongId !== ongProfile.id) {
+      throw new ForbiddenException("Este evento não pertence à sua ONG");
+    }
+
+    return this.prisma.eventApplication.findMany({
+      where: {
+        eventId,
+        status: { in: ["PENDING", "ACCEPTED"] },
+      },
+      include: {
+        volunteer: {
+          select: {
+            id: true,
+            fullName: true,
+          },
+        },
+      },
+    });
   }
 
   // ONG aceita ou rejeita candidatura
   async updateStatus(
     id: string,
     dto: UpdateEventApplicationDto,
-    userId: string,
+    userId: string
   ) {
     const ongProfile = await this.prisma.ongProfile.findUnique({
       where: { userId },
@@ -167,6 +203,27 @@ export class EventApplicationService {
       throw new ForbiddenException("Este evento não pertence à sua ONG");
     }
 
+    // Se o novo status for REJECTED e o antigo era PENDING ou ACCEPTED,
+    // a vaga deve ser liberada.
+    if (
+      dto.status === "REJECTED" &&
+      (application.status === "PENDING" || application.status === "ACCEPTED")
+    ) {
+      // Transação para garantir consistência
+      const [updatedApplication] = await this.prisma.$transaction([
+        this.prisma.eventApplication.update({
+          where: { id },
+          data: { status: "REJECTED" },
+        }),
+        this.prisma.event.update({
+          where: { id: application.eventId },
+          data: { currentCandidates: { decrement: 1 } },
+        }),
+      ]);
+      return updatedApplication;
+    }
+
+    // Para outros status (ex: PENDING -> ACCEPTED), apenas atualiza
     return this.prisma.eventApplication.update({
       where: { id },
       data: { status: dto.status },
@@ -190,15 +247,6 @@ export class EventApplicationService {
     if (!application) throw new NotFoundException("Candidatura não encontrada");
     if (application.volunteerId !== volunteer.id) {
       throw new ForbiddenException("Você não pertence a essa candidatura");
-    }
-
-    const diffHours =
-      (application.event.startDate.getTime() - new Date().getTime()) /
-      (1000 * 60 * 60);
-    if (diffHours < 48) {
-      throw new BadRequestException(
-        "Não é possível cancelar a menos de 48h do evento",
-      );
     }
 
     // transação: marca como CANCELLED e decrementa contador

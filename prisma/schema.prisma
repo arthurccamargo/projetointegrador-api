@@ -91,7 +91,7 @@ model EventApplication {
   id          String            @id @default(uuid())
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
-  status      ApplicationStatus @default(PENDING)
+  status      ApplicationStatus @default(ACTIVE)
   eventId     String
   volunteerId String
   event       Event             @relation(fields: [eventId], references: [id])
