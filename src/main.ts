@@ -5,6 +5,7 @@ Ponto de entrada da aplicação. Sobe o servidor, aplica pipes globais e configu
 import { NestFactory } from "@nestjs/core"; // classe para criar a aplicação
 import { AppModule } from "./app.module"; // agrega todos os outros módulos UserModule..
 import { BadRequestException, ValidationPipe } from "@nestjs/common"; // validação automática de DTOs
+import { SwaggerModule, DocumentBuilder } from "@nestjs/swagger"; // configuração do Swagger
 
 async function bootstrap() {
   // app é o servidor que vai ouvir requisições HTTP
@@ -27,6 +28,34 @@ async function bootstrap() {
     })
   );
 
+  // Configuração do Swagger
+  const config = new DocumentBuilder()
+    .setTitle("API Projeto Integrador - Voluntariado")
+    .setDescription("API para gestão de eventos de voluntariado e candidaturas")
+    .setVersion("1.0")
+    .addBearerAuth(
+      {
+        type: "http",
+        scheme: "bearer",
+        bearerFormat: "JWT",
+        name: "JWT",
+        description: "Insira o token JWT",
+        in: "header",
+      },
+      "JWT-auth",
+    )
+    .addTag("Auth", "Autenticação de usuários")
+    .addTag("Users", "Cadastro de voluntários e ONGs")
+    .addTag("Events", "Gestão de eventos")
+    .addTag("Applications", "Candidaturas de voluntários")
+    .addTag("Categories", "Categorias de eventos")
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup("api/docs", app, document);
+
   await app.listen(3000, '0.0.0.0'); // 3000 é a porta onde a API vai rodar localmente
+  console.log('🚀 API rodando em http://localhost:3000');
+  console.log('📚 Swagger docs em http://localhost:3000/api/docs');
 }
 bootstrap();
