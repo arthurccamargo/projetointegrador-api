@@ -1,6 +1,7 @@
-import { Injectable, BadRequestException } from "@nestjs/common";
+import { Injectable, BadRequestException, NotFoundException } from "@nestjs/common";
 import * as bcrypt from "bcrypt";
 import { CreateOngUserDto, CreateVolunteerUserDto } from "./dto/create-user.dto";
+import { UpdateVolunteerDto, UpdateOngDto } from "./dto/update-user.dto";
 import { PrismaService } from "../../../prisma/prisma.service";
 
 @Injectable()
@@ -111,5 +112,91 @@ export class UserService {
     // Remove a senha do retorno
     const { password: _, ...userWithoutPassword } = user;
     return userWithoutPassword;
+  }
+
+  /**
+   * Atualiza o perfil de um voluntário
+   */
+  async updateVolunteerProfile(userId: string, data: UpdateVolunteerDto) {
+    // Verifica se o usuário existe e é VOLUNTEER
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { volunteerProfile: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException("Usuário não encontrado");
+    }
+
+    if (user.role !== "VOLUNTEER") {
+      throw new BadRequestException("Usuário não é um voluntário");
+    }
+
+    if (!user.volunteerProfile) {
+      throw new NotFoundException("Perfil de voluntário não encontrado");
+    }
+
+    // Atualiza o perfil do voluntário
+    const updatedProfile = await this.prisma.volunteerProfile.update({
+      where: { userId },
+      data: {
+        fullName: data.fullName,
+        phone: data.phone,
+        experiences: data.experiences,
+        cep: data.cep,
+        street: data.street,
+        number: data.number,
+        complement: data.complement,
+        neighborhood: data.neighborhood,
+        city: data.city,
+        state: data.state,
+      },
+    });
+
+    return updatedProfile;
+  }
+
+  /**
+   * Atualiza o perfil de uma ONG
+   */
+  async updateOngProfile(userId: string, data: UpdateOngDto) {
+    // Verifica se o usuário existe e é ONG
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { ongProfile: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException("Usuário não encontrado");
+    }
+
+    if (user.role !== "ONG") {
+      throw new BadRequestException("Usuário não é uma organização");
+    }
+
+    if (!user.ongProfile) {
+      throw new NotFoundException("Perfil de organização não encontrado");
+    }
+
+    // Atualiza o perfil da ONG
+    const updatedProfile = await this.prisma.ongProfile.update({
+      where: { userId },
+      data: {
+        name: data.name,
+        description: data.description,
+        cep: data.cep,
+        street: data.street,
+        number: data.number,
+        complement: data.complement,
+        neighborhood: data.neighborhood,
+        city: data.city,
+        state: data.state,
+        responsibleName: data.responsibleName,
+        responsibleCpf: data.responsibleCpf,
+        documentUrl: data.documentUrl,
+      },
+    });
+
+    return updatedProfile;
   }
 }
