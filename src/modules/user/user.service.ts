@@ -199,4 +199,21 @@ export class UserService {
 
     return updatedProfile;
   }
+
+  async findUserById(id: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      include: {
+        volunteerProfile: true,
+        ongProfile: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Usuário não encontrado');
+    }
+
+    const { password, ...userWithoutPassword } = user;
+    return userWithoutPassword;
+  }
 }
