@@ -64,6 +64,11 @@ export class UserController {
     return this.userService.updateOngProfile(id, updateData);
   }
 
+  @Get(':id')
+  async getUserProfile(@Param('id') id: string) {
+    return this.userService.findUserById(id);
+  }
+  
   /* rota protegida -> precisa de Authorization: Bearer <token>
   @Get("me")
   @UseGuards(AuthGuard("jwt"))
