@@ -55,7 +55,6 @@ model OngProfile {
   responsibleCpf   String
   responsibleEmail String
   documentUrl      String?
-  status           String  @default("PENDING")
   events           Event[]
   user             User    @relation(fields: [userId], references: [id])
 }
@@ -91,7 +90,7 @@ model EventApplication {
   id          String            @id @default(uuid())
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
-  status      ApplicationStatus @default(ACTIVE)
+  status      ApplicationStatus @default(ACCEPTED)
   eventId     String
   volunteerId String
   event       Event             @relation(fields: [eventId], references: [id])
