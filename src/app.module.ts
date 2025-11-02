@@ -10,6 +10,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { CategoryModule } from './modules/category/category.module';
 import { EventModule } from './modules/event/event.module';
 import { EventApplicationModule } from './modules/event-application/event-application.module';
+import { AdminModule } from './modules/admin/admin.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -19,6 +20,7 @@ import { EventApplicationModule } from './modules/event-application/event-applic
     CategoryModule,
     EventModule,
     EventApplicationModule,
+    AdminModule,
   ],
 })
 export class AppModule {}

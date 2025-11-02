@@ -27,6 +27,7 @@
     "start": "ts-node -r tsconfig-paths/register src/main.ts",
     "start:dev": "ts-node-dev --respawn --transpile-only src/main.ts",
     "build": "tsc",
-    "start:prod": "node dist/main.js"
+    "start:prod": "node dist/main.js",
+    "seed": "ts-node -r tsconfig-paths/register prisma/seed.ts"
   }
 }

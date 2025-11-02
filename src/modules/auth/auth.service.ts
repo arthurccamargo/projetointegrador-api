@@ -18,6 +18,11 @@ export class AuthService {
 
     if (!user) throw new UnauthorizedException("E-mail ou senha inválidos");
 
+    if(user.status !== "ACTIVE") {
+      const status = user.status === "PENDING" ? "pendente" : "bloqueado";
+      throw new UnauthorizedException(`Usuário com status ${status} não pode fazer login.`);
+    }
+
     const passwordMatch = await bcrypt.compare(pass, user.password);
     if (!passwordMatch) throw new UnauthorizedException("E-mail ou senha inválidos");
 
