@@ -98,7 +98,6 @@ export class UserService {
                   responsibleCpf: (data as CreateOngUserDto).responsibleCpf,
                   responsibleEmail: (data as CreateOngUserDto).responsibleEmail,
                   documentUrl: (data as CreateOngUserDto).documentUrl,
-                  status: "PENDING",
                 },
               }
             : undefined,
