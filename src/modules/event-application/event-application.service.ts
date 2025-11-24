@@ -173,6 +173,7 @@ export class EventApplicationService {
         volunteer: {
           select: {
             id: true,
+            userId: true,      // 👈 ID do User (para rota /profile/:id)
             fullName: true,
           },
         },
