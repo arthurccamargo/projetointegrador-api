@@ -2,21 +2,28 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { CreateEventDto } from "./dto/create-event.dto";
 import { UpdateEventDto } from "./dto/update-event.dto";
 import { PrismaService } from "../../../prisma/prisma.service";
+import { BadRequestException } from "@nestjs/common";
 
 @Injectable()
 export class EventService {
   constructor(private prisma: PrismaService) {}
 
-  private computeStatus(event: { startDate: Date; durationMinutes: number; status?: string }) {
-    if (event.status === 'CANCELLED') return 'CANCELLED';
+  private computeStatus(event: {
+    startDate: Date;
+    durationMinutes: number;
+    status?: string;
+  }) {
+    if (event.status === "CANCELLED") return "CANCELLED";
 
     const now = new Date();
     const start = new Date(event.startDate);
-    const end = new Date(start.getTime() + (event.durationMinutes || 0) * 60000);
+    const end = new Date(
+      start.getTime() + (event.durationMinutes || 0) * 60000
+    );
 
-    if (now < start) return 'SCHEDULED';
-    if (now >= start && now < end) return 'IN_PROGRESS';
-    return 'COMPLETED';
+    if (now < start) return "SCHEDULED";
+    if (now >= start && now < end) return "IN_PROGRESS";
+    return "COMPLETED";
   }
 
   // combina dados do body (DTO) com dados internos (JWT) em um único objeto
@@ -47,10 +54,10 @@ export class EventService {
 
   async findAll(userId?: string) {
     const events = await this.prisma.event.findMany({
-      include: { 
-        category: true, 
+      include: {
+        category: true,
         ong: true,
-        applications: true
+        applications: true,
       },
       orderBy: { startDate: "asc" },
     });
@@ -64,16 +71,16 @@ export class EventService {
     }
 
     return events
-      .map(e => ({ ...e, status: this.computeStatus(e) }))
-      .filter(e => {
+      .map((e) => ({ ...e, status: this.computeStatus(e) }))
+      .filter((e) => {
         if (!["SCHEDULED"].includes(e.status)) return false;
-        
+
         // Se não há voluntário logado, retorna todos eventos ativos
         if (!volunteerProfileId) return true;
-        
+
         // Filtrar eventos onde o voluntário NÃO se aplicou ainda
         const hasApplied = e.applications.some(
-          app => app.volunteerId === volunteerProfileId
+          (app) => app.volunteerId === volunteerProfileId
         );
         return !hasApplied;
       });
@@ -148,14 +155,16 @@ export class EventService {
       where: { userId: userId },
     });
     if (!ongProfile) {
-      throw new NotFoundException("Perfil de ONG não encontrado para este usuário");
+      throw new NotFoundException(
+        "Perfil de ONG não encontrado para este usuário"
+      );
     }
     const events = await this.prisma.event.findMany({
       where: { ongId: ongProfile.id },
       include: { category: true, ong: false },
       orderBy: { startDate: "asc" },
     });
-    return events.map(e => ({ ...e, status: this.computeStatus(e) }));
+    return events.map((e) => ({ ...e, status: this.computeStatus(e) }));
   }
 
   async findActiveEventsByOngUserId(userId: string) {
@@ -163,7 +172,9 @@ export class EventService {
       where: { userId: userId },
     });
     if (!ongProfile) {
-      throw new NotFoundException("Perfil de ONG não encontrado para este usuário");
+      throw new NotFoundException(
+        "Perfil de ONG não encontrado para este usuário"
+      );
     }
     const events = await this.prisma.event.findMany({
       where: { ongId: ongProfile.id },
@@ -171,7 +182,7 @@ export class EventService {
       orderBy: { startDate: "asc" },
     });
     return events
-      .map(e => ({ ...e, status: this.computeStatus(e) }))
+      .map((e) => ({ ...e, status: this.computeStatus(e) }))
       .filter((e) => ["SCHEDULED", "IN_PROGRESS"].includes(e.status));
   }
 
@@ -180,7 +191,9 @@ export class EventService {
       where: { userId: userId },
     });
     if (!ongProfile) {
-      throw new NotFoundException("Perfil de ONG não encontrado para este usuário");
+      throw new NotFoundException(
+        "Perfil de ONG não encontrado para este usuário"
+      );
     }
     const events = await this.prisma.event.findMany({
       where: { ongId: ongProfile.id },
@@ -188,7 +201,81 @@ export class EventService {
       orderBy: { startDate: "desc" },
     });
     return events
-      .map(e => ({ ...e, status: this.computeStatus(e) }))
+      .map((e) => ({ ...e, status: this.computeStatus(e) }))
       .filter((e) => ["COMPLETED", "CANCELLED"].includes(e.status));
+  }
+
+  private generateCheckInCode(): string {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  }
+
+  // ONG obtém notificações de eventos em andamento (com códigos gerados automaticamente)
+  async getInProgressEventsWithCodes(userId: string) {
+    const ongProfile = await this.prisma.ongProfile.findUnique({
+      where: { userId },
+    });
+    if (!ongProfile) {
+      throw new NotFoundException(
+        "Perfil de ONG não encontrado para este usuário"
+      );
+    }
+
+    // Busca todos os eventos da ONG
+    const events = await this.prisma.event.findMany({
+      where: {
+        ongId: ongProfile.id,
+        status: { not: "CANCELLED" },
+      },
+      include: {
+        category: true,
+        applications: {
+          where: { status: "ACCEPTED" },
+        },
+      },
+      orderBy: { startDate: "asc" },
+    });
+
+    // Filtra eventos IN_PROGRESS e gera códigos automaticamente
+    const inProgressEvents = [];
+
+    for (const event of events) {
+      const currentStatus = this.computeStatus(event);
+
+      if (currentStatus === "IN_PROGRESS") {
+        // Se não tem código ainda, gera automaticamente
+        let eventWithCode = event;
+        if (!event.checkInCode) {
+          const code = this.generateCheckInCode();
+          eventWithCode = await this.prisma.event.update({
+            where: { id: event.id },
+            data: {
+              checkInCode: code,
+              checkInCodeGeneratedAt: new Date(),
+            },
+            include: {
+              category: true,
+              applications: {
+                where: { status: "ACCEPTED" },
+              },
+            },
+          });
+        }
+
+        inProgressEvents.push({
+          id: eventWithCode.id,
+          title: eventWithCode.title,
+          description: eventWithCode.description,
+          startDate: eventWithCode.startDate,
+          durationMinutes: eventWithCode.durationMinutes,
+          location: eventWithCode.location,
+          category: eventWithCode.category,
+          status: currentStatus,
+          checkInCode: eventWithCode.checkInCode,
+          checkInCodeGeneratedAt: eventWithCode.checkInCodeGeneratedAt,
+        });
+      }
+    }
+
+    return inProgressEvents;
   }
 }

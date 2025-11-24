@@ -96,6 +96,21 @@ export class EventController {
     return this.eventService.findPastEventsByOngUserId(user.sub);
   }
 
+  @Get("notifications")
+  @Roles("ONG")
+  @ApiOperation({ 
+    summary: 'Notificações de eventos em andamento (apenas ONGs)',
+    description: 'Retorna eventos IN_PROGRESS da ONG com códigos de check-in gerados automaticamente. Use este endpoint na tela de notificações.',
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Lista de eventos em andamento com códigos',
+  })
+  @ApiResponse({ status: 403, description: 'Apenas ONGs podem acessar' })
+  getNotifications(@CurrentUser() user: UserPayload) {
+    return this.eventService.getInProgressEventsWithCodes(user.sub);
+  }
+
   @Get(":id")
   @ApiOperation({ summary: 'Buscar evento por ID' })
   @ApiParam({ name: 'id', description: 'ID do evento', example: 'clxy123456789' })

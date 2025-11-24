@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam } from "@ne
 import { EventApplicationService } from "./event-application.service";
 import { CreateEventApplicationDto } from "./dto/create-event-application.dto";
 import { UpdateEventApplicationDto } from "./dto/update-event-application.dto";
+import { CheckInDto } from "./dto/check-in.dto";
 import { JwtAuthGuard } from "../../common/guard/jwt-auth.guard";
 import { RolesGuard } from "../../common/guard/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
@@ -36,6 +37,21 @@ export class EventApplicationController {
   @ApiResponse({ status: 409, description: 'Já existe uma candidatura para este evento' })
   apply(@Body() dto: CreateEventApplicationDto, @CurrentUser() user: UserPayload) {
     return this.service.apply(dto, user.sub);
+  }
+
+  @Get("notifications")
+  @Roles("VOLUNTEER")
+  @ApiOperation({ 
+    summary: 'Notificações de check-in para voluntários',
+    description: 'Retorna eventos IN_PROGRESS onde o voluntário tem candidatura ACCEPTED e ainda não fez check-in.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de eventos que começaram e aguardam check-in',
+  })
+  @ApiResponse({ status: 403, description: 'Apenas voluntários podem acessar' })
+  getNotifications(@CurrentUser() user: UserPayload) {
+    return this.service.getVolunteerNotifications(user.sub);
   }
 
   @Get("past")
@@ -115,5 +131,26 @@ export class EventApplicationController {
   @ApiResponse({ status: 404, description: 'Candidatura não encontrada' })
   cancel(@Param("id") id: string, @CurrentUser() user: UserPayload) {
     return this.service.cancel(id, user.sub);
+  }
+
+  @Post("check-in/:eventId")
+  @Roles("VOLUNTEER")
+  @ApiOperation({ 
+    summary: 'Fazer check-in no evento (apenas voluntários)',
+    description: 'Voluntário confirma presença usando o código de 6 dígitos fornecido pela ONG. O código é validado e a presença é registrada na candidatura.',
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Check-in realizado com sucesso',
+  })
+  @ApiResponse({ status: 400, description: 'Código inválido ou evento não está IN_PROGRESS' })
+  @ApiResponse({ status: 403, description: 'Apenas voluntários podem fazer check-in' })
+  @ApiResponse({ status: 404, description: 'Evento ou candidatura não encontrada' })
+  checkIn(
+    @Param("eventId") eventId: string,
+    @Body() dto: CheckInDto,
+    @CurrentUser() user: UserPayload
+  ) {
+    return this.service.checkIn(eventId, dto.code, user.sub);
   }
 }
