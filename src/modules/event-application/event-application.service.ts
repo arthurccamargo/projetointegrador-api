@@ -78,6 +78,70 @@ export class EventApplicationService {
     return "COMPLETED";
   }
 
+  // Notificações de eventos que começaram (para voluntários fazerem check-in)
+  async getVolunteerNotifications(userId: string) {
+    const volunteer = await this.prisma.volunteerProfile.findUnique({
+      where: { userId },
+    });
+    if (!volunteer) {
+      throw new ForbiddenException("Usuário não é um voluntário válido");
+    }
+
+    // Busca todas candidaturas ACCEPTED do voluntário
+    const applications = await this.prisma.eventApplication.findMany({
+      where: {
+        volunteerId: volunteer.id,
+        status: "ACCEPTED",
+      },
+      include: {
+        event: {
+          include: {
+            ong: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            category: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // Filtra apenas eventos IN_PROGRESS onde o voluntário ainda não fez check-in
+    const notifications = [];
+
+    for (const app of applications) {
+      const currentStatus = this.computeStatus(app.event);
+
+      // Se evento está em andamento
+      if (currentStatus === "IN_PROGRESS") {
+        notifications.push({
+          applicationId: app.id,
+          eventId: app.event.id,
+          title: app.event.title,
+          description: app.event.description,
+          startDate: app.event.startDate,
+          durationMinutes: app.event.durationMinutes,
+          location: app.event.location,
+          status: currentStatus,
+          ong: app.event.ong,
+          category: app.event.category,
+          checkedIn: app.checkedIn,
+          checkInAt: app.checkInAt,
+          hasCheckInCode: !!app.event.checkInCode, // Indica se ONG já gerou o código
+        });
+      }
+    }
+
+    return notifications;
+  }
+
   // Lista eventos do histórico: COMPLETED/CANCELLED OU eventos que o voluntário cancelou candidatura
   async findMyPastEvents(userId: string) {
     const volunteer = await this.prisma.volunteerProfile.findUnique({
@@ -228,6 +292,67 @@ export class EventApplicationService {
     return this.prisma.eventApplication.update({
       where: { id },
       data: { status: dto.status },
+    });
+  }
+
+  // Voluntário faz check-in com código
+  async checkIn(eventId: string, code: string, userId: string) {
+    const volunteerProfile = await this.prisma.volunteerProfile.findUnique({
+      where: { userId },
+    });
+    if (!volunteerProfile) {
+      throw new ForbiddenException("Perfil de voluntário não encontrado");
+    }
+
+    const event = await this.prisma.event.findUnique({
+      where: { id: eventId },
+    });
+
+    if (!event) throw new NotFoundException("Evento não encontrado");
+
+    const currentStatus = this.computeStatus(event);
+    if (currentStatus !== "IN_PROGRESS") {
+      throw new BadRequestException(
+        `Check-in só pode ser feito quando o evento está em andamento. Status atual: ${currentStatus}`
+      );
+    }
+
+    if (!event.checkInCode) {
+      throw new BadRequestException(
+        "Código de check-in ainda não foi gerado pela ONG"
+      );
+    }
+
+    if (event.checkInCode !== code) {
+      throw new BadRequestException("Código de check-in inválido");
+    }
+
+    // Busca a candidatura do voluntário
+    const application = await this.prisma.eventApplication.findFirst({
+      where: {
+        eventId,
+        volunteerId: volunteerProfile.id,
+        status: "ACCEPTED",
+      },
+    });
+
+    if (!application) {
+      throw new NotFoundException(
+        "Você não possui candidatura aceita para este evento"
+      );
+    }
+
+    if (application.checkedIn) {
+      throw new BadRequestException("Você já fez check-in neste evento");
+    }
+
+    // Registra o check-in
+    return this.prisma.eventApplication.update({
+      where: { id: application.id },
+      data: {
+        checkedIn: true,
+        checkInAt: new Date(),
+      },
     });
   }
 

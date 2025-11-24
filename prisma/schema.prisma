@@ -35,13 +35,14 @@ model VolunteerProfile {
   state        String?
   experiences  String?
   applications EventApplication[]
+  reviews      Review[]
   user         User               @relation(fields: [userId], references: [id])
 }
 
 model OngProfile {
-  id               String  @id @default(uuid())
-  userId           String  @unique
-  cnpj             String  @unique
+  id               String   @id @default(uuid())
+  userId           String   @unique
+  cnpj             String   @unique
   name             String
   description      String?
   cep              String
@@ -55,8 +56,11 @@ model OngProfile {
   responsibleCpf   String
   responsibleEmail String
   documentUrl      String?
+  averageRating    Float?   @default(0)
+  totalReviews     Int      @default(0)
   events           Event[]
-  user             User    @relation(fields: [userId], references: [id])
+  reviews          Review[]
+  user             User     @relation(fields: [userId], references: [id])
 }
 
 model Category {
@@ -68,22 +72,25 @@ model Category {
 }
 
 model Event {
-  id                String             @id @default(uuid())
-  title             String
-  description       String?
-  startDate         DateTime
-  durationMinutes   Int
-  location          String
-  maxCandidates     Int
-  currentCandidates Int                @default(0)
-  status            EventStatus        @default(SCHEDULED)
-  createdAt         DateTime           @default(now())
-  updatedAt         DateTime           @updatedAt
-  ongId             String
-  categoryId        String
-  category          Category           @relation(fields: [categoryId], references: [id])
-  ong               OngProfile         @relation(fields: [ongId], references: [id])
-  applications      EventApplication[]
+  id                     String             @id @default(uuid())
+  title                  String
+  description            String?
+  startDate              DateTime
+  durationMinutes        Int
+  location               String
+  maxCandidates          Int
+  currentCandidates      Int                @default(0)
+  status                 EventStatus        @default(SCHEDULED)
+  checkInCode            String?
+  checkInCodeGeneratedAt DateTime?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+  ongId                  String
+  categoryId             String
+  category               Category           @relation(fields: [categoryId], references: [id])
+  ong                    OngProfile         @relation(fields: [ongId], references: [id])
+  applications           EventApplication[]
+  reviews                Review[]
 }
 
 model EventApplication {
@@ -91,10 +98,33 @@ model EventApplication {
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
   status      ApplicationStatus @default(ACCEPTED)
+  checkedIn   Boolean           @default(false)
+  checkInAt   DateTime?
   eventId     String
   volunteerId String
   event       Event             @relation(fields: [eventId], references: [id])
   volunteer   VolunteerProfile  @relation(fields: [volunteerId], references: [id])
+  review      Review?
+}
+
+model Review {
+  id            String           @id @default(uuid())
+  rating        Int              // 1 a 5 estrelas
+  comment       String?          @db.Text
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  applicationId String           @unique
+  volunteerId   String
+  ongId         String
+  eventId       String
+  application   EventApplication @relation(fields: [applicationId], references: [id])
+  volunteer     VolunteerProfile @relation(fields: [volunteerId], references: [id])
+  ong           OngProfile       @relation(fields: [ongId], references: [id])
+  event         Event            @relation(fields: [eventId], references: [id])
+
+  @@index([ongId])
+  @@index([volunteerId])
+  @@index([eventId])
 }
 
 enum UserRole {
