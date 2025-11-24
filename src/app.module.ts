@@ -11,6 +11,7 @@ import { CategoryModule } from './modules/category/category.module';
 import { EventModule } from './modules/event/event.module';
 import { EventApplicationModule } from './modules/event-application/event-application.module';
 import { AdminModule } from './modules/admin/admin.module';
+import { ReviewModule } from './modules/review/review.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
@@ -21,6 +22,7 @@ import { AdminModule } from './modules/admin/admin.module';
     EventModule,
     EventApplicationModule,
     AdminModule,
+    ReviewModule,
   ],
 })
 export class AppModule {}
