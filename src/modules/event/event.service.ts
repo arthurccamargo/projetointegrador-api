@@ -197,7 +197,22 @@ export class EventService {
     }
     const events = await this.prisma.event.findMany({
       where: { ongId: ongProfile.id },
-      include: { category: true, ong: false },
+      include: { 
+        category: true, 
+        ong: false, 
+        applications: {
+          where: { checkedIn: true },
+          include: {
+            volunteer: {
+              select: {
+                id: true,
+                userId: true,
+                fullName: true,
+              }
+            }
+          }
+        }
+      },
       orderBy: { startDate: "desc" },
     });
     return events
